@@ -45,7 +45,11 @@ const CATS = [
   {k:'chinese_dessert', zh:'中式甜品', en:'Chinese Dessert', id:'Dessert Tionghoa'},
   {k:'western_dessert', zh:'西式甜品', en:'Western Dessert', id:'Dessert Barat'},
 ];
-let LANG = localStorage.getItem('recipe_lang')||'zh';
+const urlParams = new URLSearchParams(location.search);
+const initialRecipe = urlParams.get('recipe');
+const initialLang = urlParams.get('lang');
+
+let LANG = urlParams.get('lang') ||  localStorage.getItem('recipe_lang')||'zh';
 let CAT = 'all';
 
 // FIX: outer key is rid, NOT id, to avoid conflict with language key id (Indonesian)
@@ -102,6 +106,7 @@ function setCat(k){ CAT=k; initTabs(); render(); }
 function init(){
   document.getElementById('lang').innerHTML=['zh','en','id'].map(x=>`<button class="${LANG==x?'active':''}" onclick="setLang('${x}')">${x.toUpperCase()}</button>`).join('');
   initTabs(); render();
+  if(initialRecipe){ setTimeout(()=>{ const f=RECIPES.find(r=>r.rid==initialRecipe); if(f) openDetail(initialRecipe); }, 500); }
 }
 function initTabs(){
   document.getElementById('tabs').innerHTML=CATS.map(c=>{ const label=c[LANG]||c.zh; const act=CAT==c.k?'active':''; return `<button class="${act}" onclick="setCat('${c.k}')">${label}</button>`; }).join('');
@@ -193,8 +198,7 @@ function downloadCard(rid){
   };
   img.onerror=()=>{ alert('圖片載入失敗，試下直接截圖'); };
 }
-const params=new URLSearchParams(location.search); 
- if(params.get('reset')=='1'){ localStorage.removeItem('joes_recipes'); location.href=location.pathname; }
+if(urlParams.get('reset')=='1'){ localStorage.removeItem('joes_recipes'); location.href=location.pathname; }
 init();
 if(params.get('recipe')){ setTimeout(()=>openDetail(params.get('recipe')), 800); }
 
