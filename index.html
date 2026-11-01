@@ -136,19 +136,34 @@ function exportJson(){ const blob=new Blob([JSON.stringify(RECIPES,null,2)],{typ
 function openShare(rid){
   const r=RECIPES.find(x=>x.rid==rid); if(!r) return;
   const tr=getTr(r);
+  const langLabel = {zh:'中文', en:'English', id:'Indonesia'}[LANG]||LANG;
   const url = location.origin+location.pathname+'?recipe='+r.rid+'&lang='+LANG;
-  document.getElementById('shareBox').innerHTML=`<h3 style="margin:0">🔗 分享 ${tr.t}</h3>
-  <div style="display:flex;gap:6px;margin:12px 0">${['zh','en','id'].map(k=>`<button class="btn ${LANG==k?'black':''}" onclick="LANG='${k}';localStorage.setItem('recipe_lang','${k}');openShare('${r.rid}');render();">${k.toUpperCase()}</button>`).join('')}</div>
-  <div style="background:#FFFDF0;border:1px solid #EDE6D6;border-radius:10px;padding:10px;font-size:13px;white-space:pre-wrap;max-height:240px;overflow:auto" id="shareText">${tr.t} - ${tr.totalTime||tr.time}\n\n材料:\n${tr.ing.join('\n')}\n\n步驟:\n${tr.step.map((s,i)=> (i+1)+'. '+s).join('\n')}\n\n${url}</div>
+  document.getElementById('shareBox').innerHTML=`<h3 style="margin:0">🔗 分享 Share</h3>
+  <div style="margin:8px 0;font-size:13px;color:#555">正在分享：<b>${tr.t}</b> 的 <b>${langLabel} (${LANG})</b> 版本<br><small>只會分享呢一個菜譜嘅指定語言，唔會一次過分享晒三種語言</small></div>
+  <div style="display:flex;gap:6px;margin:12px 0"><span style="font-size:12px;color:#888">切換語言 / Switch language:</span>${['zh','en','id'].map(k=>`<button class="btn ${LANG==k?'black':''}" onclick="LANG='${k}';localStorage.setItem('recipe_lang','${k}');initTabs();render();openShare('${r.rid}');">${k.toUpperCase()}</button>`).join('')}</div>
+  <div style="background:#FFFDF0;border:1px solid #EDE6D6;border-radius:10px;padding:10px;font-size:13px;white-space:pre-wrap;max-height:240px;overflow:auto" id="shareText">${tr.t} - ${tr.totalTime||tr.time}
+${tr.cookTime||''} ${tr.prepTime||''}
+
+材料 (${langLabel}):
+${tr.ing.join('
+')}
+
+步驟 (${langLabel}):
+${tr.step.map((s,i)=> (i+1)+'. '+s).join('
+')}
+
+${url}</div>
   <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">
-    <button class="btn black" onclick="copyShare('${r.rid}')">📋 Copy 文字</button>
-    <button class="btn" onclick="copyLink('${r.rid}')">🔗 Copy 連結</button>
-    <button class="btn" onclick="downloadCard('${r.rid}')">🖼️ 下載 JPG 分享卡</button>
+    <button class="btn black" onclick="copyShare('${r.rid}')">📋 Copy 此語言版本</button>
+    <button class="btn" onclick="copyLink('${r.rid}')">🔗 Copy 指定語言連結</button>
+    <button class="btn" onclick="downloadCard('${r.rid}')">🖼️ 下載此語言 JPG</button>
     <button class="btn" onclick="closeShare()">關閉</button>
-  </div>`;
+  </div>
+  <div style="margin-top:10px;font-size:11px;color:#999">連結格式：?recipe=${r.rid}&lang=${LANG} → 對方一開就係呢個菜+呢種語言</div>`;
   document.getElementById('share').classList.add('open');
 }
 function closeShare(){ document.getElementById('share').classList.remove('open'); }
+function copyShareSingle(rid){ return copyShare(rid); }
 function copyShare(rid){
   const r=RECIPES.find(x=>x.rid==rid); const tr=getTr(r);
   const url=location.origin+location.pathname+'?recipe='+r.rid+'&lang='+LANG;
