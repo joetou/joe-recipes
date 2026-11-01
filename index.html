@@ -33,6 +33,7 @@ header{position:sticky;top:0;background:rgba(255,252,245,.95);border-bottom:1px 
 </div>
 </div>
 
+<div id="share" class="modal" onclick="if(event.target==this)closeShare()"><div id="shareBox" class="box" style="padding:16px;max-width:480px"></div></div>
 <div id="detail" class="modal" onclick="if(event.target==this)closeDetail()"><div id="detailBox" class="box"></div></div>
 
 <script>
@@ -94,7 +95,9 @@ try{
 }catch(e){ RECIPES = SEED; }
 function save(){ localStorage.setItem('joes_recipes', JSON.stringify(RECIPES)); }
 
-function setLang(k){ LANG=k; localStorage.setItem('recipe_lang',k); init(); }
+function setLang(k){ LANG=k; localStorage.setItem('recipe_lang',k); init();
+if(params.get('recipe')){ setTimeout(()=>openDetail(params.get('recipe')), 800); }
+ }
 function setCat(k){ CAT=k; initTabs(); render(); }
 function init(){
   document.getElementById('lang').innerHTML=['zh','en','id'].map(x=>`<button class="${LANG==x?'active':''}" onclick="setLang('${x}')">${x.toUpperCase()}</button>`).join('');
@@ -114,9 +117,14 @@ function render(){
   document.getElementById('adminList').innerHTML=RECIPES.map(r=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;font-size:12px"><span>${r.rid} - ${(r.zh&&r.zh.t)||''}</span><button onclick="delRecipe('${r.rid}')" style="color:red;background:none;border:none;cursor:pointer">刪</button></div>`).join('');
 }
 
+let currentRid='';
 function openDetail(rid){
+  currentRid=rid;
   const r=RECIPES.find(x=>x.rid==rid||x.id==rid); if(!r) return; const tr=getTr(r);
-  document.getElementById('detailBox').innerHTML=`<img src="${r.img}"><div class="content"><h2 style="margin:0">${tr.t}</h2><div style="font-size:12px;color:#777;margin:6px 0">${tr.totalTime||tr.time} | ⏱️ ${tr.cookTime||''} | 🧑‍🍳 ${tr.prepTime||''} | ${tr.serv} | ${tr.diff}<br><small>⏲️ 總時間 Total: ${tr.totalTime||tr.time} | 煮 Cook: ${tr.cookTime||'-'} | 備 Prep: ${tr.prepTime||'-'}</small></div><h4>材料 / Ingredients</h4><div class="ing">${tr.ing.map(i=>`<div>${i}</div>`).join('')}</div><h4>步驟 Steps</h4>${tr.step.map((s,i)=>`<div class="step"><div class="num">${i+1}</div><div style="font-size:13px">${s}</div></div>`).join('')}${tr.tips?`<div class="tip"><b>💡 貼士 Tips</b><ul style="margin:6px 0 0 16px">${tr.tips.map(x=>`<li>${x}</li>`).join('')}</ul></div>`:''}${tr.secret?`<div class="secret"><b>🤫 秘訣 Secrets</b><ul style="margin:6px 0 0 16px">${tr.secret.map(x=>`<li>${x}</li>`).join('')}</ul></div>`:''}<div style="background:#F8F6F0;border-radius:10px;padding:10px;margin-top:10px;font-size:13px"><b>🍽️:</b> ${tr.serve}</div><div style="margin-top:14px"><button class="btn" onclick="closeDetail()">關閉 Close</button></div></div>`;
+  document.getElementById('detailBox').innerHTML=`<img src="${r.img}"><div class="content"><h2 style="margin:0">${tr.t}</h2><div style="font-size:12px;color:#777;margin:6px 0">${tr.totalTime||tr.time} | ⏱️ ${tr.cookTime||''} | 🧑‍🍳 ${tr.prepTime||''} | ${tr.serv} | ${tr.diff}<br><small>⏲️ 總時間 Total: ${tr.totalTime||tr.time} | 煮 Cook: ${tr.cookTime||'-'} | 備 Prep: ${tr.prepTime||'-'}</small></div><h4>材料 / Ingredients</h4><div class="ing">${tr.ing.map(i=>`<div>${i}</div>`).join('')}</div><h4>步驟 Steps</h4>${tr.step.map((s,i)=>`<div class="step"><div class="num">${i+1}</div><div style="font-size:13px">${s}</div></div>`).join('')}${tr.tips?`<div class="tip"><b>💡 貼士 Tips</b><ul style="margin:6px 0 0 16px">${tr.tips.map(x=>`<li>${x}</li>`).join('')}</ul></div>`:''}${tr.secret?`<div class="secret"><b>🤫 秘訣 Secrets</b><ul style="margin:6px 0 0 16px">${tr.secret.map(x=>`<li>${x}</li>`).join('')}</ul></div>`:''}<div style="background:#F8F6F0;border-radius:10px;padding:10px;margin-top:10px;font-size:13px"><b>🍽️:</b> ${tr.serve}</div><div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+<button class="btn black" onclick="openShare(currentRid)">🔗 分享 Share</button>
+<button class="btn" onclick="closeDetail()">關閉 Close</button>
+</div></div>`;
   document.getElementById('detail').classList.add('open');
 }
 function closeDetail(){ document.getElementById('detail').classList.remove('open'); }
@@ -124,8 +132,57 @@ function openAdmin(){ const p=prompt('管理密碼:'); if(p!=='8888'){ if(p!==nu
 function delRecipe(rid){ if(confirm('刪除?')){ RECIPES=RECIPES.filter(x=>x.rid!=rid); save(); render(); } }
 function resetAll(){ localStorage.removeItem('joes_recipes'); RECIPES=SEED; save(); location.href=location.pathname; }
 function exportJson(){ const blob=new Blob([JSON.stringify(RECIPES,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='recipes.json'; a.click(); }
-const params=new URLSearchParams(location.search); if(params.get('reset')=='1'){ localStorage.removeItem('joes_recipes'); location.href=location.pathname; }
+
+function openShare(rid){
+  const r=RECIPES.find(x=>x.rid==rid); if(!r) return;
+  const tr=getTr(r);
+  const url = location.origin+location.pathname+'?recipe='+r.rid+'&lang='+LANG;
+  document.getElementById('shareBox').innerHTML=`<h3 style="margin:0">🔗 分享 ${tr.t}</h3>
+  <div style="display:flex;gap:6px;margin:12px 0">${['zh','en','id'].map(k=>`<button class="btn ${LANG==k?'black':''}" onclick="LANG='${k}';localStorage.setItem('recipe_lang','${k}');openShare('${r.rid}');render();">${k.toUpperCase()}</button>`).join('')}</div>
+  <div style="background:#FFFDF0;border:1px solid #EDE6D6;border-radius:10px;padding:10px;font-size:13px;white-space:pre-wrap;max-height:240px;overflow:auto" id="shareText">${tr.t} - ${tr.totalTime||tr.time}\n\n材料:\n${tr.ing.join('\n')}\n\n步驟:\n${tr.step.map((s,i)=> (i+1)+'. '+s).join('\n')}\n\n${url}</div>
+  <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">
+    <button class="btn black" onclick="copyShare('${r.rid}')">📋 Copy 文字</button>
+    <button class="btn" onclick="copyLink('${r.rid}')">🔗 Copy 連結</button>
+    <button class="btn" onclick="downloadCard('${r.rid}')">🖼️ 下載 JPG 分享卡</button>
+    <button class="btn" onclick="closeShare()">關閉</button>
+  </div>`;
+  document.getElementById('share').classList.add('open');
+}
+function closeShare(){ document.getElementById('share').classList.remove('open'); }
+function copyShare(rid){
+  const r=RECIPES.find(x=>x.rid==rid); const tr=getTr(r);
+  const url=location.origin+location.pathname+'?recipe='+r.rid+'&lang='+LANG;
+  const txt=`${tr.t} - ${tr.totalTime||tr.time}\n\n材料:\n${tr.ing.join('\n')}\n\n步驟:\n${tr.step.map((s,i)=> (i+1)+'. '+s).join('\n')}\n\n${url}`;
+  navigator.clipboard.writeText(txt).then(()=>alert('已複製文字 / Copied!'));
+}
+function copyLink(rid){
+  const url=location.origin+location.pathname+'?recipe='+rid+'&lang='+LANG;
+  navigator.clipboard.writeText(url).then(()=>alert('連結已複製: '+url));
+}
+function downloadCard(rid){
+  const r=RECIPES.find(x=>x.rid==rid); const tr=getTr(r);
+  const c=document.createElement('canvas'); c.width=1080; c.height=1350; const ctx=c.getContext('2d');
+  ctx.fillStyle='#FFFCF5'; ctx.fillRect(0,0,c.width,c.height);
+  ctx.fillStyle='#111'; ctx.font='bold 54px sans-serif'; ctx.fillText(tr.t, 40, 80);
+  ctx.font='28px sans-serif'; ctx.fillStyle='#777'; ctx.fillText((tr.totalTime||tr.time)+' | '+tr.serv+' | '+(tr.cookTime||''), 40, 120);
+  const img=new Image(); img.crossOrigin='anonymous'; img.src=r.img;
+  img.onload=()=>{
+    ctx.drawImage(img, 40, 150, 1000, 600);
+    ctx.fillStyle='#111'; ctx.font='26px sans-serif';
+    let y=800; tr.ing.slice(0,5).forEach(ing=>{ ctx.fillText(ing, 40, y); y+=32; });
+    y+=20; ctx.font='bold 26px sans-serif'; ctx.fillText('步驟:', 40, y); y+=32; ctx.font='24px sans-serif';
+    tr.step.slice(0,4).forEach((s,i)=>{ ctx.fillText((i+1)+'. '+s.substring(0,50), 40, y); y+=30; });
+    ctx.fillStyle='#FFC107'; ctx.fillRect(0,1260,1080,90);
+    ctx.fillStyle='#111'; ctx.font='bold 28px sans-serif'; ctx.fillText("Joe's Recipe Lab - "+location.host, 40, 1315);
+    const a=document.createElement('a'); a.download=r.rid+'.jpg'; a.href=c.toDataURL('image/jpeg',0.85); a.click();
+  };
+  img.onerror=()=>{ alert('圖片載入失敗，試下直接截圖'); };
+}
+const params=new URLSearchParams(location.search); 
+ if(params.get('reset')=='1'){ localStorage.removeItem('joes_recipes'); location.href=location.pathname; }
 init();
+if(params.get('recipe')){ setTimeout(()=>openDetail(params.get('recipe')), 800); }
+
 </script>
 </body>
 </html>
